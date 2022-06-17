@@ -1,3 +1,4 @@
+from email import message
 from tkinter import *
 from turtle import width
 from PIL import ImageTk, Image
@@ -277,6 +278,7 @@ class Admin_Panel(Frame):
             font=("times new roman", 18),
             relief=GROOVE,
             bg="skyblue",
+            command=self.update_medicine
         )
         self.update_med.place(x=320, y=320)
 
@@ -307,7 +309,8 @@ class Admin_Panel(Frame):
             bg="skyblue",
             command=self.clear,
         )
-        self.clear_btn.place(x=320,y=390)
+        self.clear_btn.place(x=320, y=390)
+
     def Medicine_Details_Frame(self):
         self.medicine_detail_frame = Frame(
             self, height=530, width=740, bg="skyblue", relief=RIDGE, bd=2
@@ -431,13 +434,15 @@ class Admin_Panel(Frame):
             self.fetch_data()
             self.mydb.close()
             messagebox.showinfo("OPMS", "Data Inserted Successfully")
-    #Function for clear all
+
+    # Function for clear all
     def clear(self):
         self.med_id_var.set("")
         self.med_name_var.set("")
         self.med_price_var.set("")
         self.exp_var.set("")
-        self.description.set("1.0",END)
+        self.description.set("1.0", END)
+
     def fetch_data(self):
         self.mydb = psycopg2.connect(
             database="opms",
@@ -469,7 +474,10 @@ class Admin_Panel(Frame):
 
     def logout(self):
         Admin_Panel.quit
-        messagebox.showinfo("Admin Panel","Logout from admin panel successfully\nYou are being redirected to Home Page")
+        messagebox.showinfo(
+            "Admin Panel",
+            "Logout from admin panel successfully\nYou are being redirected to Home Page",
+        )
         self.controller.show_frame(MainPage)
 
     def clear(self):
@@ -479,6 +487,7 @@ class Admin_Panel(Frame):
         self.exp_var.set("")
         self.description.delete("1.0", END)
 
+    # Function for delete medicine
     def delete_medicine(self):
         self.mydb = psycopg2.connect(
             database="opms",
@@ -496,6 +505,32 @@ class Admin_Panel(Frame):
         self.mydb.close()
         self.fetch_data()
         self.clear()
+
+    # function for update message
+    def update_medicine(self):
+        self.mydb = psycopg2.connect(
+            database="opms",
+            user="postgres",
+            password="aditya@2001",
+            host="localhost",
+            port="5432",
+        )
+        self.mycursor = self.mydb.cursor()
+        self.mycursor.execute(
+            "UPDATE medicine_details SET medicine_name=%s,price=%s,expiry_date=%s,description=%s WHERE id=%s",
+            (
+                self.med_name_var.get(),
+                self.med_price_var.get(),
+                self.exp_var.get(),
+                self.description.get("1.0", END),
+                self.med_id_var.get(),
+            ),
+        )
+        self.mydb.commit()
+        self.fetch_data()
+        self.mydb.close()
+        self.clear()
+        messagebox.showinfo("Admin Panel","Medicine Update Successfully")
 
 
 # End Of admin function
