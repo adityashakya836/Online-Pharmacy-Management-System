@@ -1,0 +1,42 @@
+The pharmacy management system, also known as the pharmacy information system, is a system that stores data and enables functionality
+that organizes and maintains the medication use process within pharmacies.
+
+ def gui(self):
+        self.frame()
+        self.title()
+        self.admin()
+        self.new_user()
+        self.registered_user()
+        self.time()
+        self.day()
+    def frame(self):
+        self.img=Image.open("pharam_img.jpg")
+        self.img = self.img.resize((1250,580),Image.ANTIALIAS)
+        self.photoImg= ImageTk.PhotoImage(self.img)
+
+        self.frame=Label(self.root,image=self.photoImg)
+        self.frame.place(x=0,y=0)
+    def time(self):
+        self.string = strftime('%H:%M:%S %p')
+        self.lbl = Label(self.root,font=('sans serif',30,'bold'),relief=GROOVE)
+        self.lbl.config(text=self.string)
+        self.lbl.after(1000,self.time)
+        self.lbl.place(x=37,y=30)
+    def day(self):
+        self.today = date.today()
+        self.today_lbl = Label(self.root,font=('sans serif',30,'bold'),relief=GROOVE)
+        self.today_lbl.config(text=self.today)
+        self.today_lbl.place(x=1010,y=30)
+
+    def title(self):
+        self.title=Label(self.root,text="Pharmacy Management System",font=('times new roman',17,'bold'),width=105,relief=GROOVE)
+        self.title.pack()
+    def admin(self):
+        self.admin_button=Button(self.root,text="Admin Login",font=('sans serif',18,'bold'),relief=RIDGE,bd=3)
+        self.admin_button.place(anchor='center',x=640,y=150)
+    def new_user(self):
+        self.new_user_button = Button(self.root,text="New User",font=('sans serif',18,'bold'),relief=RIDGE,bd=3,width=11)
+        self.new_user_button.place(anchor='center',x=640,y=220)
+    def registered_user(self):
+        self.registered_user_button = Button(self.root,text="Registered User",font=("sans serif",18,'bold'),relief=RIDGE,bd=3)
+        self.registered_user_button.place(anchor='center',x=640,y=290)
