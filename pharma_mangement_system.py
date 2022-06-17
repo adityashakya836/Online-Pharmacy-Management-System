@@ -10,7 +10,7 @@ from tkinter import messagebox
 import psycopg2
 
 
-class PharamacyManagement(Tk):
+class PharamacyManagementSystem(Tk):
     def __init__(self, *args, **kwargs):
         Tk.__init__(self, *args, **kwargs)
         self.title("Pharmacy Management System")
@@ -581,7 +581,7 @@ class RegisteredUser(Frame):
 
 
 if __name__ == "__main__":
-    pharamApp = PharamacyManagement()
+    pharamApp = PharamacyManagementSystem()
     # root.title("Pharmacy Management System")
     pharamApp.geometry("1250x600+0+0")
     pharamApp.maxsize(1250, 600)
