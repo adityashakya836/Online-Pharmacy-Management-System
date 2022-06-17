@@ -1,6 +1,4 @@
-from email import message
 from tkinter import *
-from turtle import width
 from PIL import ImageTk, Image
 from time import strftime
 from tkinter import ttk
@@ -8,6 +6,7 @@ from datetime import date
 from tkcalendar import Calendar, DateEntry
 from tkinter import messagebox
 import psycopg2
+from tomlkit import value
 
 
 class PharamacyManagementSystem(Tk):
@@ -278,7 +277,7 @@ class Admin_Panel(Frame):
             font=("times new roman", 18),
             relief=GROOVE,
             bg="skyblue",
-            command=self.update_medicine
+            command=self.update_medicine,
         )
         self.update_med.place(x=320, y=320)
 
@@ -312,6 +311,9 @@ class Admin_Panel(Frame):
         self.clear_btn.place(x=320, y=390)
 
     def Medicine_Details_Frame(self):
+        # Text Variable for Search
+        self.search_by = StringVar()
+        self.get_search_text = StringVar()
         self.medicine_detail_frame = Frame(
             self, height=530, width=740, bg="skyblue", relief=RIDGE, bd=2
         )
@@ -335,12 +337,16 @@ class Admin_Panel(Frame):
             width=13,
             font=("times new roman", 12, "bold"),
             state="readonly",
+            textvariable=self.search_by,
         )  # textvariable=searchby
         self.combo_search["values"] = ["Medicine Name", "Expiry Date"]
         self.combo_search.place(x=150, y=2)
 
         self.text_search = Entry(
-            self.search_label, width=18, font=("times new roman", 12, "bold")
+            self.search_label,
+            width=18,
+            font=("times new roman", 12, "bold"),
+            textvariable=self.get_search_text,
         )  # textvariable=search_txt
         self.text_search.place(x=330, y=2)
 
@@ -498,8 +504,9 @@ class Admin_Panel(Frame):
         )
         self.mycursor = self.mydb.cursor()
         self.mycursor.execute(
-            "DELETE FROM medicine_details WHERE medicine_details.id=%s",
-            self.med_id_var.get(),
+            "DELETE FROM medicine_details WHERE medicine_details.id='{0}'".format(
+                self.med_id_var.get()
+            )
         )
         self.mydb.commit()
         self.mydb.close()
@@ -530,7 +537,35 @@ class Admin_Panel(Frame):
         self.fetch_data()
         self.mydb.close()
         self.clear()
-        messagebox.showinfo("Admin Panel","Medicine Update Successfully")
+        messagebox.showinfo("Admin Panel", "Medicine Update Successfully")
+
+    # Function for Search Data
+    def search_medicine(self):
+        if self.search_by.get() == "" and self.get_search_text.get() == "":
+            messagebox.showerror("Error", "Please Enter some value")
+        else:
+            self.mydb = psycopg2.connect(
+                database="opms",
+                user="postgres",
+                password="aditya@2001",
+                host="localhost",
+                port="5432",
+            )
+            self.mycursor = self.mydb.cursor()
+            self.mycursor.execute(
+                "SELECT * FROM medicine_details WHERE "
+                + str(self.search_by.get())
+                + " LIKE "
+                + str(self.get_search_text.get())
+            )
+            self.rows = self.mycursor.fetchall()
+            if len(self.rows) != 0:
+                self.medicine_table.delete(*self.medicine_table.get_children())
+                for row in self.rows:
+                    self.medicine_table.insert("1.0", END, values=row)
+                self.mydb.commit()
+
+            self.mydb.close
 
 
 # End Of admin function
@@ -539,6 +574,7 @@ class Admin_Panel(Frame):
 class NewUser(Frame):
     def __init__(self, parent, controller):
         Frame.__init__(self, parent)
+        self.controller = controller
         self.title = Label(
             self,
             text="New User",
@@ -547,19 +583,200 @@ class NewUser(Frame):
             relief=GROOVE,
         )
         self.title.pack(padx=10, pady=10)
-        switch_window_button = Button(
-            self, text="Main Page", command=lambda: controller.show_frame(MainPage)
-        )
-        switch_window_button.pack(side="bottom", fill=X)
         self.New_user()
 
     def New_user(self):
-        registration = Label(
-            self, text="New Registration", font=("sans serif", 18, "bold")
+        self.u_id = StringVar()
+        self.u_name = StringVar()
+        self.address = StringVar()
+        self.u_email_id = StringVar()
+        self.u_contact_number = StringVar()
+        self.gender = StringVar()
+        self.password1 = StringVar()
+        self.password2 = StringVar()
+        self.registration_frame = Frame(
+            self, width=830, height=440, bg="skyblue", relief=GROOVE, bd=3
         )
-        registration.place(anchor="center", x=550, y=100)
-        self.user_name = Label(self, text="User Name")
-        self.user_name.place(x=30, y=190)
+        self.registration_frame.place(x=200, y=90)
+        registration = Label(
+            self.registration_frame,
+            text="New Registration",
+            font=("sans serif", 18, "bold"),
+            bg="mistyrose",
+            relief=GROOVE,
+            bd=2,
+        )
+        registration.place(anchor="center", x=400, y=30, bordermode="outside")
+        # -------------------------------User Id------------------------------
+        Label(
+            self.registration_frame,
+            text="User ID",
+            font=("verdana", 12, "bold"),
+            bg="skyblue",
+        ).place(x=10, y=90)
+        Entry(
+            self.registration_frame,
+            font=("times new roman", 12, "bold"),
+            width=30,
+            textvariable=self.u_id,
+        ).place(x=120, y=90)
+        # --------------------------------User Name----------------------------
+        Label(
+            self.registration_frame,
+            text="User Name",
+            font=("verdana", 12, "bold"),
+            bg="skyblue",
+        ).place(x=430, y=90)
+        Entry(
+            self.registration_frame,
+            font=("times new roman", 12, "bold"),
+            width=30,
+            textvariable=self.u_name,
+        ).place(x=550, y=90)
+        # ----------------------------------ADDRESS-------------------------------
+        Label(
+            self.registration_frame,
+            text="Address",
+            font=("verdana", 12, "bold"),
+            bg="skyblue",
+        ).place(x=10, y=170)
+        Entry(
+            self.registration_frame,
+            font=("times new roman", 12, "bold"),
+            width=30,
+            textvariable=self.address,
+        ).place(x=120, y=170)
+        # ----------------------------------Email-------------------------
+        Label(
+            self.registration_frame,
+            text="Email",
+            font=("verdana", 12, "bold"),
+            bg="skyblue",
+        ).place(x=430, y=170)
+        Entry(
+            self.registration_frame,
+            font=("times new roman", 12, "bold"),
+            width=30,
+            textvariable=self.u_email_id,
+        ).place(x=550, y=170)
+        # ----------------------------------CONTACT-----------------------
+        Label(
+            self.registration_frame,
+            text="Contact",
+            font=("verdana", 12, "bold"),
+            bg="skyblue",
+        ).place(x=10, y=250)
+        Entry(
+            self.registration_frame,
+            font=("times new roman", 12, "bold"),
+            width=30,
+            textvariable=self.u_contact_number,
+        ).place(x=120, y=250)
+        # ---------------------------------Gender--------------------------
+        Label(
+            self.registration_frame,
+            text="Gender",
+            font=("verdana", 12, "bold"),
+            bg="skyblue",
+        ).place(x=430, y=250)
+        self.gender_combo_search = ttk.Combobox(
+            self.registration_frame,
+            width=28,
+            font=("times new roman", 12, "bold"),
+            state="readonly",
+            textvariable=self.gender,
+        )  # textvariable=searchby
+        self.gender_combo_search["values"] = ["Male", "Female", "Other"]
+        self.gender_combo_search.place(x=550, y=250)
+        # -----------------------------PASSWORD1----------------
+        Label(
+            self.registration_frame,
+            text="Password1",
+            font=("verdana", 12, "bold"),
+            bg="skyblue",
+        ).place(x=10, y=320)
+        Entry(
+            self.registration_frame,
+            font=("times new roman", 12, "bold"),
+            width=30,
+            textvariable=self.password1,
+        ).place(x=120, y=320)
+        # -----------------------------PASSWORD2----------------
+        Label(
+            self.registration_frame,
+            text="Password2",
+            font=("verdana", 12, "bold"),
+            bg="skyblue",
+        ).place(x=430, y=320)
+        Entry(
+            self.registration_frame,
+            font=("times new roman", 12, "bold"),
+            width=30,
+            textvariable=self.password2,
+        ).place(x=550, y=320)
+        # ----------------------------REGISTRATION BUTTON---------------
+        Button(
+            self.registration_frame,
+            text="Register",
+            font=("Times new roman", 15, "bold"),
+            relief=GROOVE,
+            bg="DarkSeaGreen1",
+            fg="tomato",
+            command=self.registration,
+        ).place(x=150, y=370)
+        # --------------------------Login Button------------------------
+        Button(
+            self.registration_frame,
+            text="Login",
+            font=("Times new roman", 15, "bold"),
+            relief=GROOVE,
+            bg="DarkSeaGreen1",
+            fg="tomato",
+        ).place(x=320, y=370)
+        # -------------------------Go To Main Page Button----------------
+        Button(
+            self.registration_frame,
+            text="Main Page",
+            font=("Times new roman", 15, "bold"),
+            command=lambda: self.controller.show_frame(MainPage),
+            bg="DarkSeaGreen1",
+            fg="tomato",
+            relief=GROOVE,
+        ).place(x=470, y=370)
+
+    def registration(self):
+        self.mydb = psycopg2.connect(
+            database="opms",
+            user="postgres",
+            password="aditya@2001",
+            host="localhost",
+            port="5432",
+        )
+        self.mycursor = self.mydb.cursor()
+        if self.password1.get() == self.password2.get():
+            self.email = self.mycursor.execute("SELECT email FROM users")
+            self.conact = self.mycursor.execute("SELECT contact_number FROM users")
+            self.u_id_ = self.mycursor.execute("SELECT u_id FROM users")
+            if self.u_email_id.get()==self.email:
+                messagebox.showinfo("Registration", "Email Already exist")
+            elif self.u_contact_number == self.conact:
+                messagebox.showinfo("Registration", "Contact Number already exit")
+            else:
+                self.mycursor.execute(
+                    "INSERT INTO users(u_id,name,address,email,contact_number,gender,password) VALUES('{0}','{1}','{2}','{3}','{4}','{5}','{6}')".format(
+                        self.u_id.get(),
+                        self.u_name.get(),
+                        self.address.get(),
+                        self.u_email_id.get(),
+                        self.u_contact_number.get(),
+                        self.gender.get(),
+                        self.password1.get(),
+                    )
+                )
+                self.mydb.commit()
+            self.mydb.close()
+        else:
+            messagebox.showerror("Errow", "Password Not Match")
 
 
 class RegisteredUser(Frame):
@@ -581,9 +798,9 @@ class RegisteredUser(Frame):
 
 
 if __name__ == "__main__":
-    pharamApp = PharamacyManagementSystem()
+    pharmaApp = PharamacyManagementSystem()
     # root.title("Pharmacy Management System")
-    pharamApp.geometry("1250x600+0+0")
-    pharamApp.maxsize(1250, 600)
-    pharamApp.minsize(1250, 600)
-    pharamApp.mainloop()
+    pharmaApp.geometry("1250x600+0+0")
+    pharmaApp.maxsize(1250, 600)
+    pharmaApp.minsize(1250, 600)
+    pharmaApp.mainloop()
