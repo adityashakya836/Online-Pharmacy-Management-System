@@ -3,10 +3,10 @@ from PIL import ImageTk, Image
 from time import strftime
 from tkinter import ttk
 from datetime import date
+from numpy import imag
 from tkcalendar import Calendar, DateEntry
 from tkinter import messagebox
 import psycopg2
-from tomlkit import value
 
 
 class PharamacyManagementSystem(Tk):
@@ -598,6 +598,7 @@ class NewUser(Frame):
             self, width=830, height=440, bg="skyblue", relief=GROOVE, bd=3
         )
         self.registration_frame.place(x=200, y=90)
+
         registration = Label(
             self.registration_frame,
             text="New Registration",
@@ -713,6 +714,7 @@ class NewUser(Frame):
             font=("times new roman", 12, "bold"),
             width=30,
             textvariable=self.password2,
+            show="*",
         ).place(x=550, y=320)
         # ----------------------------REGISTRATION BUTTON---------------
         Button(
@@ -732,6 +734,7 @@ class NewUser(Frame):
             relief=GROOVE,
             bg="DarkSeaGreen1",
             fg="tomato",
+            command=lambda: self.controller.show_frame(RegisteredUser),
         ).place(x=320, y=370)
         # -------------------------Go To Main Page Button----------------
         Button(
@@ -745,38 +748,72 @@ class NewUser(Frame):
         ).place(x=470, y=370)
 
     def registration(self):
-        self.mydb = psycopg2.connect(
-            database="opms",
-            user="postgres",
-            password="aditya@2001",
-            host="localhost",
-            port="5432",
-        )
-        self.mycursor = self.mydb.cursor()
-        if self.password1.get() == self.password2.get():
-            self.email = self.mycursor.execute("SELECT email FROM users")
-            self.conact = self.mycursor.execute("SELECT contact_number FROM users")
-            self.u_id_ = self.mycursor.execute("SELECT u_id FROM users")
-            if self.u_email_id.get()==self.email:
-                messagebox.showinfo("Registration", "Email Already exist")
-            elif self.u_contact_number == self.conact:
-                messagebox.showinfo("Registration", "Contact Number already exit")
-            else:
-                self.mycursor.execute(
-                    "INSERT INTO users(u_id,name,address,email,contact_number,gender,password) VALUES('{0}','{1}','{2}','{3}','{4}','{5}','{6}')".format(
-                        self.u_id.get(),
-                        self.u_name.get(),
-                        self.address.get(),
-                        self.u_email_id.get(),
-                        self.u_contact_number.get(),
-                        self.gender.get(),
-                        self.password1.get(),
+
+        if (
+            self.u_id.get() == ""
+            or self.u_name.get() == ""
+            or self.address.get() == ""
+            or self.u_email_id.get() == ""
+            or self.u_contact_number.get() == ""
+            or self.gender.get() == ""
+            or self.password1.get() == ""
+            or self.password2.get() == ""
+        ):
+            messagebox.showerror("Error", "All Fields are required")
+        else:
+            self.mydb = psycopg2.connect(
+                database="opms",
+                user="postgres",
+                password="aditya@2001",
+                host="localhost",
+                port="5432",
+            )
+            self.mycursor = self.mydb.cursor()
+            if self.password1.get() == self.password2.get():
+                self.email = self.mycursor.execute(
+                    "SELECT email FROM users where email='{0}'".format(
+                        self.u_email_id.get()
                     )
                 )
-                self.mydb.commit()
-            self.mydb.close()
-        else:
-            messagebox.showerror("Errow", "Password Not Match")
+                self.email_row = self.mycursor.fetchall()
+                self.conact = self.mycursor.execute(
+                    "SELECT contact_number FROM users where contact_number='{0}'".format(
+                        self.u_contact_number.get()
+                    )
+                )
+                self.contact_row = self.mycursor.fetchall()
+                self.u_id_ = self.mycursor.execute(
+                    "SELECT u_id FROM users WHERE u_id='{0}'".format(self.u_id.get())
+                )
+                self.u_id_row = self.mycursor.fetchall()
+
+                if len(self.email_row) != 0:
+                    messagebox.showinfo("Registration", "Email Already exist")
+                elif len(self.u_id_row) != 0:
+                    messagebox.showerror("User Id", "User Id already exist")
+                elif len(self.contact_row) != 0:
+                    messagebox.showinfo("Registration", "Contact Number already exit")
+                else:
+                    self.mycursor.execute(
+                        "INSERT INTO users(u_id,name,address,email,contact_number,gender,password) VALUES('{0}','{1}','{2}','{3}','{4}','{5}','{6}')".format(
+                            self.u_id.get().lower(),
+                            self.u_name.get().capitalize(),
+                            self.address.get().capitalize(),
+                            self.u_email_id.get(),
+                            self.u_contact_number.get(),
+                            self.gender.get(),
+                            self.password1.get(),
+                        )
+                    )
+                    self.mydb.commit()
+                    messagebox.showinfo(
+                        "New User", "Registered Successfully Now You Can Login"
+                    )
+                    self.controller.show_frame(RegisteredUser)
+                self.mydb.close()
+
+            else:
+                messagebox.showerror("Errow", "Password Not Match")
 
 
 class RegisteredUser(Frame):
@@ -784,18 +821,110 @@ class RegisteredUser(Frame):
         Frame.__init__(self, parent)
         self.title = Label(
             self,
-            text="Registered User",
+            text="Login",
             font=("times new roman", 17, "bold"),
             width=105,
             relief=GROOVE,
         )
+        self.controller = controller
         self.title.pack(padx=10, pady=10)
-        switch_window_button = Button(
-            self, text="Main Page", command=lambda: controller.show_frame(MainPage)
-        )
-        switch_window_button.pack(side="bottom", fill=X)
-        switch_window_button.pack(side="bottom", fill=X)
+        # -----------------Login Text Variable---------------------------------
+        self.u_name = StringVar()
+        self.u_password = StringVar()
+        self.login()
 
+    def login(self):
+        self.login_frame = Frame(
+            self, width=830, height=440, bg="skyblue", relief=GROOVE, bd=3
+        )
+        self.login_frame.place(x=200, y=90)
+
+        Label(
+            self.login_frame,
+            text="Enter User Id ",
+            font=("times new roman", 18, "bold"),
+            bg="skyblue",
+        ).place(x=100, y=100)
+        Entry(
+            self.login_frame,
+            font=("times new roman", 13, "bold"),
+            textvariable=self.u_name,
+            width=34,
+        ).place(x=300, y=100)
+        Label(
+            self.login_frame,
+            text="Enter Password ",
+            font=("times new roman", 18, "bold"),
+            bg="skyblue",
+        ).place(x=100, y=200)
+        Entry(
+            self.login_frame,
+            font=("times new roman", 13, "bold"),
+            textvariable=self.u_password,
+            width=34,
+        ).place(x=300, y=200)
+
+        # --------------------------------Button--------------------------
+        # ----------------------------REGISTRATION BUTTON----------------
+        Button(
+            self.login_frame,
+            text="Register",
+            font=("Times new roman", 15, "bold"),
+            relief=GROOVE,
+            bg="DarkSeaGreen1",
+            fg="tomato",
+            command=lambda: self.controller.show_frame(NewUser),
+        ).place(x=150, y=270)
+        # --------------------------Login Button------------------------
+        Button(
+            self.login_frame,
+            text="Login",
+            font=("Times new roman", 15, "bold"),
+            relief=GROOVE,
+            bg="DarkSeaGreen1",
+            fg="tomato",
+            command=self.login_func,
+        ).place(x=320, y=270)
+        # -------------------------Go To Main Page Button----------------
+        Button(
+            self.login_frame,
+            text="Main Page",
+            font=("Times new roman", 15, "bold"),
+            command=lambda: self.controller.show_frame(MainPage),
+            bg="DarkSeaGreen1",
+            fg="tomato",
+            relief=GROOVE,
+        ).place(x=470, y=270)
+
+    def login_func(self):
+        if self.u_name.get() == "" or self.u_password.get() == "":
+            messagebox.showerror("Login Error", "All Fields are required")
+        else:
+            self.mydb = psycopg2.connect(
+                database="opms",
+                user="postgres",
+                password="aditya@2001",
+                host="localhost",
+                port="5432",
+            )
+            self.mycursor = self.mydb.cursor()
+            self._u_name = self.mycursor.execute(
+                "SELECT u_id FROM users WHERE u_id='{0}'".format(self.u_name.get())
+            )
+            self._u_name_row = self.mycursor.fetchall()
+            self._u_password = self.mycursor.execute(
+                "SELECT password FROM users WHERE password='{0}'".format(
+                    self.u_password.get()
+                )
+            )
+            self._u_password_row = self.mycursor.fetchall()
+            if(len(self._u_name_row)!=0 and len(self._u_password_row)!=0):
+                messagebox.showinfo("Login","Successfully Logged In")
+
+            else:
+                messagebox.showerror("Login Unsuccessfull","Please check User ID and Password")
+            self.mydb.commit()
+            self.mydb.close
 
 if __name__ == "__main__":
     pharmaApp = PharamacyManagementSystem()
