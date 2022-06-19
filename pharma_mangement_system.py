@@ -51,24 +51,130 @@ class MainPage(Frame):
         switch_window_button = Button(
             self,
             text="Admin",
-            font=("sans serif", 24, "bold"),
+            font=("sans serif", 13, "bold"),
             command=lambda: controller.show_frame(Admin),
         )
-        switch_window_button.place(x=550, y=170, anchor="center")
+        switch_window_button.place(x=90, y=60, anchor="center")
         switch_window_button = Button(
             self,
             text="New User",
-            font=("sans serif", 24, "bold"),
+            font=("sans serif", 13, "bold"),
             command=lambda: controller.show_frame(NewUser),
         )
-        switch_window_button.place(x=550, y=240, anchor="center")
+        switch_window_button.place(x=540, y=60, anchor="center")
         switch_window_button = Button(
             self,
             text="Registered User",
-            font=("sans serif", 24, "bold"),
+            font=("sans serif", 13, "bold"),
             command=lambda: controller.show_frame(RegisteredUser),
         )
-        switch_window_button.place(x=550, y=320, anchor="center")
+        switch_window_button.place(x=1050, y=60, anchor="center")
+        self.Medicine_Details_Frame()
+    def Medicine_Details_Frame(self):
+        # Text Variable for Search
+        self.search_by = StringVar()
+        self.get_search_text = StringVar()
+        self.medicine_detail_frame = Frame(
+            self, height=510, width=1150, bg="skyblue", relief=RIDGE, bd=2
+        )
+        self.medicine_detail_frame.place(x=40, y=80)
+        # Search Frame
+        self.search_label = Label(
+            self.medicine_detail_frame, bg="skyblue", width=162, height=3, relief=GROOVE
+        )
+        self.search_label.place(x=3, y=2)
+
+        self.searchby_label = Label(
+            self.search_label,
+            text="Search By.",
+            bg="skyblue",
+            font=("verdana", 13, "bold"),
+        )
+        self.searchby_label.place(x=3, y=2)
+
+        self.combo_search = ttk.Combobox(
+            self.search_label,
+            width=13,
+            font=("times new roman", 12, "bold"),
+            state="readonly",
+            textvariable=self.search_by,
+        )  # textvariable=searchby
+        self.combo_search["values"] = ["Medicine Name", "Expiry Date"]
+        self.combo_search.place(x=150, y=2)
+
+        self.text_search = Entry(
+            self.search_label,
+            width=50,
+            font=("times new roman", 12, "bold"),
+            textvariable=self.get_search_text,
+        )  # textvariable=search_txt
+        self.text_search.place(x=330, y=2)
+
+        self.search_button = Button(
+            self.search_label, text="Search", font=("verdana", 13, "bold")
+        )  # command=search_data
+        self.search_button.place(x=850, y=2)
+
+        self.showall_button = Button(
+            self.search_label,
+            text="Show All",
+            font=("verdana", 13, "bold"),
+            # command=self.fetch_data,
+        )  # command=fetch_data
+        self.showall_button.place(x=1000, y=2)
+
+        # Medicine Detail Table Frame
+        self.table_frame = Frame(
+            self.medicine_detail_frame, bd=4, relief=RIDGE, bg="pale turquoise"
+        )
+        self.table_frame.place(x=3, y=70, width=1140, height=430)
+
+        self.scroll_x = Scrollbar(self.table_frame, orient=HORIZONTAL)
+        self.scroll_y = Scrollbar(self.table_frame, orient=VERTICAL)
+        self.medicine_table = ttk.Treeview(
+            self.table_frame,
+            columns=("Id", "Medicine Name", "Price", "Expiry Date", "Description"),
+            xscrollcommand=self.scroll_x.set,
+            yscrollcommand=self.scroll_y.set,
+        )
+
+        self.scroll_x.pack(side=BOTTOM, fill=X)
+        self.scroll_y.pack(side=RIGHT, fill=Y)
+        self.scroll_x.config(command=self.medicine_table.xview)
+        self.scroll_y.config(command=self.medicine_table.yview)
+
+        self.medicine_table.heading("Id", text="Id")
+        self.medicine_table.heading("Medicine Name", text="Medicine Name")
+        self.medicine_table.heading("Price", text="Price")
+        self.medicine_table.heading("Expiry Date", text="Expiry Date")
+        self.medicine_table.heading("Description", text="Description")
+        self.medicine_table["show"] = "headings"
+        self.medicine_table.column("Medicine Name", width="115")
+        self.medicine_table.column("Price", width="115")
+        self.medicine_table.column("Expiry Date", width="120")
+        self.medicine_table.column("Description", width="115")
+
+        self.medicine_table.pack(fill=BOTH, expand=1)
+        self.medicine_table.bind("<ButtonRelease-1>")
+        self.fetch_data()
+    
+    def fetch_data(self):
+        self.mydb = psycopg2.connect(
+            database="opms",
+            user="postgres",
+            password="aditya@2001",
+            host="localhost",
+            port="5432",
+        )
+        self.mycursor = self.mydb.cursor()
+        self.mycursor.execute("SELECT * FROM medicine_details")
+        self.rows = self.mycursor.fetchall()
+        if len(self.rows) != 0:
+            self.medicine_table.delete(*self.medicine_table.get_children())
+            for self.row in self.rows:
+                self.medicine_table.insert("", END, values=self.row)
+            self.mydb.commit()
+        self.mydb.close()
 
 
 # Admin
@@ -918,13 +1024,16 @@ class RegisteredUser(Frame):
                 )
             )
             self._u_password_row = self.mycursor.fetchall()
-            if(len(self._u_name_row)!=0 and len(self._u_password_row)!=0):
-                messagebox.showinfo("Login","Successfully Logged In")
+            if len(self._u_name_row) != 0 and len(self._u_password_row) != 0:
+                messagebox.showinfo("Login", "Successfully Logged In")
 
             else:
-                messagebox.showerror("Login Unsuccessfull","Please check User ID and Password")
+                messagebox.showerror(
+                    "Login Unsuccessfull", "Please check User ID and Password"
+                )
             self.mydb.commit()
             self.mydb.close
+
 
 if __name__ == "__main__":
     pharmaApp = PharamacyManagementSystem()
